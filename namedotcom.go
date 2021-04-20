@@ -94,7 +94,7 @@ func (n *nameDotComRecord) fromLibDNSRecord(record libdns.Record, zone string) {
 	}
 	n.ID = int32(id)
 	n.Type = record.Type
-	n.Host = libdns.RelativeName(record.Name, zone)
+	n.Host = record.Name
 	n.Answer = record.Value
 	n.TTL = uint32(record.TTL.Seconds())
 }
