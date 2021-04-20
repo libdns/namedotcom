@@ -7,6 +7,7 @@ import (
 	"github.com/libdns/libdns"
 	"github.com/pkg/errors"
 	"io"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"time"
@@ -88,6 +89,7 @@ func (n *nameDotCom) doRequest(ctx context.Context, method, endpoint string, pos
 
 // fromLibDNSRecord maps a name.com record from a libdns record
 func (n *nameDotComRecord) fromLibDNSRecord(record libdns.Record, zone string) {
+	log.Debugf("%s, %s",record.Name, zone)
 	var id int64
 	if record.ID != "" {
 		id, _ = strconv.ParseInt(record.ID, 10, 32)
@@ -101,6 +103,7 @@ func (n *nameDotComRecord) fromLibDNSRecord(record libdns.Record, zone string) {
 
 // toLibDNSRecord maps a name.com record to a libdns record
 func (n *nameDotComRecord) toLibDNSRecord(zone string) libdns.Record {
+	log.Debugf("%s, %s",n.Host, zone)
 	id := fmt.Sprint(n.ID)
 	return libdns.Record{
 		ID:    id,

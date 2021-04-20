@@ -27,20 +27,20 @@ func init() {
 	}
 
 	testRecords = []libdns.Record{{
-		Type:  "A",
-		Name:  "TestRecord",
-		Value: "192.168.1.33",
+		Type:  "txt",
+		Name:  "_acme-test",
+		Value: "skid0s.com",
 		TTL:   time.Duration(300),
 	},
 	}
 	testSetRecords = []libdns.Record{{
-		Type:  "A",
-		Name:  "TestRecord",
-		Value: "192.168.2.33",
+		Type:  "txt",
+		Name:  "_acme-test",
+		Value: "skid0s.com",
 		TTL:   time.Duration(300),
 	},
 	}
-	zone = os.Getenv("test_zone")
+	zone = "skid0s.com."
 }
 
 func TestProvider_GetRecords(t *testing.T) {
