@@ -100,12 +100,12 @@ func (n *nameDotComRecord) fromLibDNSRecord(record libdns.Record, zone string) {
 }
 
 // toLibDNSRecord maps a name.com record to a libdns record
-func (n *nameDotComRecord) toLibDNSRecord() libdns.Record {
+func (n *nameDotComRecord) toLibDNSRecord(zone string) libdns.Record {
 	id := fmt.Sprint(n.ID)
 	return libdns.Record{
 		ID:    id,
 		Type:  n.Type,
-		Name:  n.Host,
+		Name:  libdns.RelativeName(zone, n.Host),
 		Value: n.Answer,
 		TTL:   time.Duration(n.TTL) * time.Second,
 	}
