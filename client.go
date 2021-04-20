@@ -80,15 +80,15 @@ func (p *Provider) deleteRecord(ctx context.Context, zone string, record libdns.
 
 	deletedRecord.fromLibDNSRecord(record)
 	if err = json.NewEncoder(post).Encode(deletedRecord); err != nil {
-		return record, err
+		return record, fmt.Errorf("record -> %s, err -> %w", zone, err)
 	}
 
 	if body, err = p.client.doRequest(ctx, method, endpoint, post); err != nil {
-		return record, err
+		return record, fmt.Errorf("record -> %s, err -> %w", zone, err)
 	}
 
 	if err = json.NewDecoder(body).Decode(&deletedRecord); err != nil {
-		return record, err
+		return record, fmt.Errorf("record -> %s, err -> %w", zone, err)
 	}
 
 	return deletedRecord.toLibDNSRecord(), nil
@@ -119,15 +119,16 @@ func (p *Provider) upsertRecord(ctx context.Context, zone string, record libdns.
 	upsertedRecord.fromLibDNSRecord(record)
 
 	if err = json.NewEncoder(post).Encode(upsertedRecord); err != nil {
-		return record, err
+		return record, fmt.Errorf("record -> %s, zone -> %s, err -> %w", record, zone, err)
 	}
 
 	if body, err = p.client.doRequest(ctx, method, endpoint, post); err != nil {
-		return record, err
+		return record, fmt.Errorf("record -> %s, zone -> %s, err -> %w", record, zone, err)
 	}
 
+
 	if err = json.NewDecoder(body).Decode(&upsertedRecord); err != nil {
-		return record, err
+		return record, fmt.Errorf("record -> %s, zone -> %s, err -> %w", record, zone, err)
 	}
 
 	return upsertedRecord.toLibDNSRecord(), nil
