@@ -51,7 +51,7 @@ func (p *Provider) listAllRecords(ctx context.Context, zone string) ([]libdns.Re
 			}
 
 			for _, record := range resp.Records {
-				records = append(records, record.toLibDNSRecord(zone))
+				records = append(records, record.toLibDNSRecord())
 			}
 
 			reqPage = int(resp.NextPage)
@@ -92,7 +92,7 @@ func (p *Provider) deleteRecord(ctx context.Context, zone string, record libdns.
 		return record, fmt.Errorf("record -> %s, err -> %w", zone, err)
 	}
 
-	return deletedRecord.toLibDNSRecord(zone), nil
+	return deletedRecord.toLibDNSRecord(), nil
 }
 
 // upsertRecord replaces a record with the target record or creates a new record if update target not found
@@ -132,5 +132,5 @@ func (p *Provider) upsertRecord(ctx context.Context, zone string, record libdns.
 		return record, fmt.Errorf("record -> %s, zone -> %s, err -> %w", record, zone, err)
 	}
 
-	return upsertedRecord.toLibDNSRecord(zone), nil
+	return upsertedRecord.toLibDNSRecord(), nil
 }
