@@ -78,7 +78,7 @@ func (p *Provider) deleteRecord(ctx context.Context, zone string, record libdns.
 
 	endpoint := fmt.Sprintf("/v4/domains/%s/records/%s", zone, record.ID)
 
-	deletedRecord.fromLibDNSRecord(record)
+	deletedRecord.fromLibDNSRecord(record, zone)
 	if err = json.NewEncoder(post).Encode(deletedRecord); err != nil {
 		return record, fmt.Errorf("record -> %s, err -> %w", zone, err)
 	}
@@ -116,7 +116,7 @@ func (p *Provider) upsertRecord(ctx context.Context, zone string, record libdns.
 
 	endpoint := fmt.Sprintf("/v4/domains/%s/records/%s", zone, record.ID)
 
-	upsertedRecord.fromLibDNSRecord(record)
+	upsertedRecord.fromLibDNSRecord(record, zone)
 
 	if err = json.NewEncoder(post).Encode(upsertedRecord); err != nil {
 		return record, fmt.Errorf("record -> %s, zone -> %s, err -> %w", record, zone, err)

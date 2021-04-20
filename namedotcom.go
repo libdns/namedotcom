@@ -87,14 +87,14 @@ func (n *nameDotCom) doRequest(ctx context.Context, method, endpoint string, pos
 }
 
 // fromLibDNSRecord maps a name.com record from a libdns record
-func (n *nameDotComRecord) fromLibDNSRecord(record libdns.Record) {
+func (n *nameDotComRecord) fromLibDNSRecord(record libdns.Record, zone string) {
 	var id int64
 	if record.ID != "" {
 		id, _ = strconv.ParseInt(record.ID, 10, 32)
 	}
 	n.ID = int32(id)
 	n.Type = record.Type
-	n.Host = record.Name
+	n.Host = libdns.RelativeName(zone, record.Name)
 	n.Answer = record.Value
 	n.TTL = uint32(record.TTL.Seconds())
 }
