@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -94,7 +95,7 @@ func (n *nameDotComRecord) fromLibDNSRecord(record libdns.Record, zone string) {
 	}
 	n.ID = int32(id)
 	n.Type = record.Type
-	n.Host = record.Name
+	n.Host = strings.TrimSuffix(strings.Replace(record.Name, zone, "", -1), ".")
 	n.Answer = record.Value
 	n.TTL = uint32(record.TTL.Seconds())
 }

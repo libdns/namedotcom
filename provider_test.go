@@ -28,15 +28,15 @@ func init() {
 
 	testRecords = []libdns.Record{{
 		Type:  "txt",
-		Name:  "_acme-test",
-		Value: "skid0s.com",
+		Name:  "_acme-challenge.skid0s.com",
+		Value: "dhdodo",
 		TTL:   time.Duration(300),
 	},
 	}
 	testSetRecords = []libdns.Record{{
 		Type:  "txt",
-		Name:  "_acme-test",
-		Value: "skid0s.com",
+		Name:  "_acme-challenge.skid0s.com",
+		Value: "euheoiuhoe",
 		TTL:   time.Duration(300),
 	},
 	}

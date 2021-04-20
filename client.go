@@ -36,10 +36,15 @@ func (p *Provider) listAllRecords(ctx context.Context, zone string) ([]libdns.Re
 		body    io.Reader
 		resp    = &listRecordsResponse{}
 		reqPage = 1
+		unFQDNzone string
 	)
 
+
+	//  namedotcom interface doesnt play well with the trailing period convention
+	unFQDNzone = strings.TrimSuffix(zone, ".")
+
 	for reqPage > 0 {
-		endpoint := fmt.Sprintf("/v4/domains/%s/records", strings.TrimSuffix(zone, "."))
+		endpoint := fmt.Sprintf("/v4/domains/%s/records", unFQDNzone)
 
 		if reqPage != 0 {
 			if body, err = p.client.doRequest(ctx, method, endpoint+"?page="+fmt.Sprint(reqPage), nil); err != nil {
@@ -75,9 +80,13 @@ func (p *Provider) deleteRecord(ctx context.Context, zone string, record libdns.
 		method = "DELETE"
 		body   io.Reader
 		post   = &bytes.Buffer{}
+		unFQDNzone string
 	)
 
-	endpoint := fmt.Sprintf("/v4/domains/%s/records/%s", strings.TrimSuffix(zone,"."), record.ID)
+	//  namedotcom interface doesnt play well with the trailing period convention
+	unFQDNzone = strings.TrimSuffix(zone, ".")
+
+	endpoint := fmt.Sprintf("/v4/domains/%s/records/%s", unFQDNzone, record.ID)
 
 	deletedRecord.fromLibDNSRecord(record, zone)
 	if err = json.NewEncoder(post).Encode(deletedRecord); err != nil {
@@ -109,15 +118,19 @@ func (p *Provider) upsertRecord(ctx context.Context, zone string, record libdns.
 		method = "PUT"
 		body   io.Reader
 		post   = &bytes.Buffer{}
+		unFQDNzone string
 	)
 
 	if record.ID == "" {
 		method = "POST"
 	}
 
-	endpoint := fmt.Sprintf("/v4/domains/%s/records/%s", strings.TrimSuffix(zone, "."), record.ID)
+	//  namedotcom interface doesnt play well with the trailing period convention
+	unFQDNzone = strings.TrimSuffix(zone, ".")
 
-	upsertedRecord.fromLibDNSRecord(record, zone)
+	endpoint := fmt.Sprintf("/v4/domains/%s/records/%s", unFQDNzone, record.ID)
+
+	upsertedRecord.fromLibDNSRecord(record, unFQDNzone)
 
 	if err = json.NewEncoder(post).Encode(upsertedRecord); err != nil {
 		return record, fmt.Errorf("record -> %s, zone -> %s, err -> %w", record, zone, err)
