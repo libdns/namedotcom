@@ -6,7 +6,6 @@ package namedotcom
 import (
 	"context"
 	"github.com/libdns/libdns"
-	"strings"
 )
 
 // Provider implements the libdns interface for namedotcom
@@ -19,7 +18,7 @@ type Provider struct {
 
 // GetRecords lists all the records in the zone.
 func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record, error) {
-	records, err := p.listAllRecords(ctx, p.unFQDN(zone))
+	records, err := p.listAllRecords(ctx, zone)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +31,7 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 	var appendedRecords []libdns.Record
 
 	for _, record := range records {
-		newRecord, err := p.upsertRecord(ctx, p.unFQDN(zone), record)
+		newRecord, err := p.upsertRecord(ctx, zone, record)
 		if err != nil {
 			return nil, err
 		}
@@ -48,7 +47,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 	var setRecords []libdns.Record
 
 	for _, record := range records {
-		setRecord, err := p.upsertRecord(ctx, p.unFQDN(zone), record)
+		setRecord, err := p.upsertRecord(ctx,zone, record)
 		if err != nil {
 			return setRecords, err
 		}
@@ -63,7 +62,7 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 	var deletedRecords []libdns.Record
 
 	for _, record := range records {
-		deletedRecord, err := p.deleteRecord(ctx, p.unFQDN(zone), record)
+		deletedRecord, err := p.deleteRecord(ctx,zone, record)
 		if err != nil {
 			return nil, err
 		}
@@ -73,10 +72,6 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 	return deletedRecords, nil
 }
 
-// namedot will return "Not Found" for FQDN zone
-func (p *Provider) unFQDN(zone string) string {
-	return strings.TrimSuffix(zone, ".")
-}
 
 // Interface guards
 var (

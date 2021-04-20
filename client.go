@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/libdns/libdns"
 	"io"
+	"strings"
 	"sync"
 )
 
@@ -38,7 +39,7 @@ func (p *Provider) listAllRecords(ctx context.Context, zone string) ([]libdns.Re
 	)
 
 	for reqPage > 0 {
-		endpoint := fmt.Sprintf("/v4/domains/%s/records", zone)
+		endpoint := fmt.Sprintf("/v4/domains/%s/records", strings.TrimSuffix(zone, "."))
 
 		if reqPage != 0 {
 			if body, err = p.client.doRequest(ctx, method, endpoint+"?page="+fmt.Sprint(reqPage), nil); err != nil {
@@ -76,7 +77,7 @@ func (p *Provider) deleteRecord(ctx context.Context, zone string, record libdns.
 		post   = &bytes.Buffer{}
 	)
 
-	endpoint := fmt.Sprintf("/v4/domains/%s/records/%s", zone, record.ID)
+	endpoint := fmt.Sprintf("/v4/domains/%s/records/%s", strings.TrimSuffix(zone,"."), record.ID)
 
 	deletedRecord.fromLibDNSRecord(record, zone)
 	if err = json.NewEncoder(post).Encode(deletedRecord); err != nil {
@@ -114,7 +115,7 @@ func (p *Provider) upsertRecord(ctx context.Context, zone string, record libdns.
 		method = "POST"
 	}
 
-	endpoint := fmt.Sprintf("/v4/domains/%s/records/%s", zone, record.ID)
+	endpoint := fmt.Sprintf("/v4/domains/%s/records/%s", strings.TrimSuffix(zone, "."), record.ID)
 
 	upsertedRecord.fromLibDNSRecord(record, zone)
 
