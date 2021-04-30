@@ -15,6 +15,7 @@ type Provider struct {
 	User   string `json:"user,omitempty"`
 	Server string `json:"server,omitempty"` // e.g. https://api.name.com or https://api.dev.name.com
 
+}
 
 // GetRecords lists all the records in the zone.
 func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record, error) {
