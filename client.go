@@ -53,7 +53,7 @@ func (p *Provider) listAllRecords(ctx context.Context, zone string) ([]libdns.Re
 	}
 
 	// handle pagination, in case domain has more records then the default of 1000 per page
-	for {
+	for reqPage > 0 {
 		if reqPage != 0 {
 			endpoint := fmt.Sprintf("/v4/domains/%s/records?page=%d", unFQDNzone, reqPage)
 
@@ -70,8 +70,6 @@ func (p *Provider) listAllRecords(ctx context.Context, zone string) ([]libdns.Re
 			}
 
 			reqPage = int(resp.NextPage)
-		} else {
-			break
 		}
 	}
 

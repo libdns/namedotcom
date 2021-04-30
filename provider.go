@@ -11,10 +11,9 @@ import (
 // Provider implements the libdns interface for namedotcom
 type Provider struct {
 	nameClient
-	Token   string `json:"api_token,omitempty"`
-	User    string `json:"user,omitempty"`
-	Server  string `json:"server,omitempty"` // e.g. https://api.name.com or https://api.dev.name.com
-	Timeout int32  `json:"timeout,omitempty"`
+	Token  string `json:"api_token,omitempty"`
+	User   string `json:"user,omitempty"`
+	Server string `json:"server,omitempty"` // e.g. https://api.name.com or https://api.dev.name.com
 }
 
 // GetRecords lists all the records in the zone.

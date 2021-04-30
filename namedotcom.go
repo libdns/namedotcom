@@ -18,7 +18,7 @@ import (
 )
 
 // default timeout for the http request handler (seconds)
-const HTTP_TIMEOUT = 20
+const HTTP_TIMEOUT = 30
 
 type (
 	nameDotCom struct {
