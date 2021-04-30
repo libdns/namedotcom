@@ -6,7 +6,7 @@ name.com for [`libdns`](https://github.com/libdns/libdns)
 This package implements the [libdns interfaces](https://github.com/libdns/libdns) for name.com, allowing you to manage DNS records.
 
 ## Authenticating
-To initiate the provider you need to supply the following arguments:
+To initiate the provider you need to supply the following parameters:
 ```go
 provider := namedotcom.Provider{
 	Token : "NAMEDOTCOM_API_TOKEN",
