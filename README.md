@@ -6,55 +6,59 @@ name.com for [`libdns`](https://github.com/libdns/libdns)
 This package implements the [libdns interfaces](https://github.com/libdns/libdns) for name.com, allowing you to manage DNS records.
 
 ## Authenticating
-
-To authenticate you need to supply the following arguments to the provider: 
-1. name.com **user name**.
-2. name.com **api token**.
-3. name.com **api url** ( e.g. https://api.name.com)
+To initiate the provider you need to supply the following arguments:
+```go
+provider := namedotcom.Provider{
+	Token : "NAMEDOTCOM_API_TOKEN",
+	User :     "NAMEDOTCOM_USER_NAME",
+	Server: "https://api.name.com", // full url scheme expected here..
+}
+```
 
 ## Example
-
-Here's a minimal example illustrating common use cases.
-
+Here's a basic example of how to list, update and delete records using this provider
 ```go
 package main
 
 import (
 	"context"
 	"github.com/libdns/libdns"
+	"os"
 	"github.com/libdns/namedotcom"
 	"log"
 )
 
 func main() {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	zone := "example.com."
 
 	// configure the name.com DNS provider 
 	provider := namedotcom.Provider{
-		APIToken : "super_secret_token",
-		User :     "user",
-		APIUrl : "https://api.name.com",
+		Token : os.GetEnv("NAMEDOTCOM_API_TOKEN"),
+		User :     os.GetEnv("NAMEDOTCOM_USER_NAME"),
+		Server:    os.GetEnv("NAMEDOTCOM_SERVER"),
 	}
 
-	// list records
+	// list and iterate through all records
 	recs, err := provider.GetRecords(ctx, zone)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	for _, rec := range recs {
 		log.Println(rec)
 	}
 
-	// create records (AppendRecords is similar)
+
+	// attempts an upsert, PUT or POST for the given record
 	newRecs, err = provider.SetRecords(ctx, zone, []libdns.Record{
 		Type:  "A",
 		Name:  "sub",
 		Value: "1.2.3.4",
 	})
 
-	// delete records (DeleteRecords() will attempt to find the record ID if not specified)
+	// delete records deletes the given record by ID.
 	deletedRecs, err = provider.DeleteRecords(ctx, zone, []libdns.Record{
 		Type:  "A",
 		Name:  "sub",

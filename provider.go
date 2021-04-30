@@ -1,19 +1,20 @@
-// Package namedotcom implements a DNS record management client compatible
-// with the libdns interfaces for namedotcom.
+// namedotcom implements the libdns interfaces to manage name.com dns records
 
 package namedotcom
 
 import (
 	"context"
+
 	"github.com/libdns/libdns"
 )
 
 // Provider implements the libdns interface for namedotcom
 type Provider struct {
 	nameClient
-	APIToken string `json:"api_token,omitempty"`
-	User     string `json:"user,omitempty"`
-	APIUrl   string `json:"api_url,omitempty"`
+	Token   string `json:"api_token,omitempty"`
+	User    string `json:"user,omitempty"`
+	Server  string `json:"server,omitempty"` // e.g. https://api.name.com or https://api.dev.name.com
+	Timeout int32  `json:"timeout,omitempty"`
 }
 
 // GetRecords lists all the records in the zone.
@@ -47,7 +48,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 	var setRecords []libdns.Record
 
 	for _, record := range records {
-		setRecord, err := p.upsertRecord(ctx,zone, record)
+		setRecord, err := p.upsertRecord(ctx, zone, record)
 		if err != nil {
 			return setRecords, err
 		}
@@ -62,7 +63,7 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 	var deletedRecords []libdns.Record
 
 	for _, record := range records {
-		deletedRecord, err := p.deleteRecord(ctx,zone, record)
+		deletedRecord, err := p.deleteRecord(ctx, zone, record)
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +72,6 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 
 	return deletedRecords, nil
 }
-
 
 // Interface guards
 var (

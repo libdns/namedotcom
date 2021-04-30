@@ -5,54 +5,64 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/libdns/libdns"
 	"io"
 	"strings"
 	"sync"
+
+	"github.com/libdns/libdns"
 )
 
-// nameClient represents the namedotcom client access
+// nameClient extends the namedotcom api and request handler to the provider..
 type nameClient struct {
 	client *nameDotCom
 	mutex  sync.Mutex
 }
 
-func (p *Provider) getClient() {
-	p.client = NewNameDotComClient(p.APIToken, p.User, p.APIUrl)
+// getClient initiates a new nameClient and assigns it to the provider..
+func (p *Provider) getClient(ctx context.Context) error {
+	newNameclient, err := NewNameDotComClient(ctx, p.Token, p.User, p.Server)
+	if err != nil {
+		return err
+	}
+	p.client = newNameclient
+	return nil
 }
 
-// listAllRecords returns all records for a zone
+// listAllRecords returns all records for the given zone .. GET /v4/domains/{ domainName }/records
 func (p *Provider) listAllRecords(ctx context.Context, zone string) ([]libdns.Record, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-
-	p.getClient()
-
 	var (
 		records []libdns.Record
-		err     error
+
+		/*** 'zone' args that are passed in using compliant zone formats have the FQDN '.' suffix qualifier
+		and in order to use the zone arg as a domainName reference to name.com's api we must remove the '.' suffix.
+		otherwise the api will not recognize the domain.. ***/
+		unFQDNzone = strings.TrimSuffix(zone, ".")
 
 		method  = "GET"
 		body    io.Reader
 		resp    = &listRecordsResponse{}
 		reqPage = 1
-		unFQDNzone string
+
+		err error
 	)
 
+	if err = p.getClient(ctx); err != nil {
+		return []libdns.Record{}, err
+	}
 
-	//  namedotcom interface doesnt play well with the trailing period convention
-	unFQDNzone = strings.TrimSuffix(zone, ".")
-
-	for reqPage > 0 {
-		endpoint := fmt.Sprintf("/v4/domains/%s/records", unFQDNzone)
-
+	// handle pagination, in case domain has more records then the default of 1000 per page
+	for {
 		if reqPage != 0 {
-			if body, err = p.client.doRequest(ctx, method, endpoint+"?page="+fmt.Sprint(reqPage), nil); err != nil {
-				return nil, err
+			endpoint := fmt.Sprintf("/v4/domains/%s/records?page=%d", unFQDNzone, reqPage)
+
+			if body, err = p.client.doRequest(ctx, method, endpoint, nil); err != nil {
+				return []libdns.Record{}, fmt.Errorf("request failed:  %w", err)
 			}
 
 			if err = json.NewDecoder(body).Decode(resp); err != nil {
-				return nil, err
+				return []libdns.Record{}, fmt.Errorf("could not decode name.com's response:  %w", err)
 			}
 
 			for _, record := range resp.Records {
@@ -60,90 +70,94 @@ func (p *Provider) listAllRecords(ctx context.Context, zone string) ([]libdns.Re
 			}
 
 			reqPage = int(resp.NextPage)
+		} else {
+			break
 		}
 	}
 
 	return records, nil
 }
 
-// deleteRecord deletes a record from the zone
+//  deleteRecord  DELETE /v4/domains/{ domainName }/records/{ record.ID }
 func (p *Provider) deleteRecord(ctx context.Context, zone string, record libdns.Record) (libdns.Record, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-
-	p.getClient()
-
 	var (
-		deletedRecord nameDotComRecord
-		err           error
+		shouldDelete nameDotComRecord
+		unFQDNzone   = strings.TrimSuffix(zone, ".")
 
-		method = "DELETE"
-		body   io.Reader
-		post   = &bytes.Buffer{}
-		unFQDNzone string
+		method   = "DELETE"
+		endpoint = fmt.Sprintf("/v4/domains/%s/records/%s", unFQDNzone, record.ID)
+		body     io.Reader
+		post     = &bytes.Buffer{}
+
+		err error
 	)
 
-	//  namedotcom interface doesnt play well with the trailing period convention
-	unFQDNzone = strings.TrimSuffix(zone, ".")
+	shouldDelete.fromLibDNSRecord(record, unFQDNzone)
 
-	endpoint := fmt.Sprintf("/v4/domains/%s/records/%s", unFQDNzone, record.ID)
+	if err = p.getClient(ctx); err != nil {
+		return libdns.Record{}, err
+	}
 
-	deletedRecord.fromLibDNSRecord(record, zone)
-	if err = json.NewEncoder(post).Encode(deletedRecord); err != nil {
-		return record, fmt.Errorf("record -> %s, err -> %w", zone, err)
+	if err = json.NewEncoder(post).Encode(shouldDelete); err != nil {
+		return libdns.Record{}, fmt.Errorf("could not encode form data for request:  %w", err)
 	}
 
 	if body, err = p.client.doRequest(ctx, method, endpoint, post); err != nil {
-		return record, fmt.Errorf("record -> %s, err -> %w", zone, err)
+		return libdns.Record{}, fmt.Errorf("request to delete the record was not successful:  %w", err)
 	}
 
-	if err = json.NewDecoder(body).Decode(&deletedRecord); err != nil {
-		return record, fmt.Errorf("record -> %s, err -> %w", zone, err)
+	if err = json.NewDecoder(body).Decode(&shouldDelete); err != nil {
+		return libdns.Record{}, fmt.Errorf("could not decode the response from name.com:  %w", err)
 	}
 
-	return deletedRecord.toLibDNSRecord(), nil
+	return shouldDelete.toLibDNSRecord(), nil
 }
 
-// upsertRecord replaces a record with the target record or creates a new record if update target not found
-func (p *Provider) upsertRecord(ctx context.Context, zone string, record libdns.Record) (libdns.Record, error) {
+// upsertRecord  PUT || POST /v4/domains/{ domainName }/records/{ record.ID }
+func (p *Provider) upsertRecord(ctx context.Context, zone string, canidateRecord libdns.Record) (libdns.Record, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	p.getClient()
-
 	var (
-		upsertedRecord nameDotComRecord
-		err            error
+		shouldUpsert nameDotComRecord
+		unFQDNzone   = strings.TrimSuffix(zone, ".")
 
-		method = "PUT"
-		body   io.Reader
-		post   = &bytes.Buffer{}
-		unFQDNzone string
+		method   = "PUT"
+		endpoint = fmt.Sprintf("/v4/domains/%s/records/%s", unFQDNzone, canidateRecord.ID)
+		body     io.Reader
+		post     = &bytes.Buffer{}
+
+		err error
 	)
 
-	if record.ID == "" {
+	if canidateRecord.ID == "" {
 		method = "POST"
+		endpoint = fmt.Sprintf("/v4/domains/%s/records", unFQDNzone)
 	}
 
-	//  namedotcom interface doesnt play well with the trailing period convention
-	unFQDNzone = strings.TrimSuffix(zone, ".")
+	shouldUpsert.fromLibDNSRecord(canidateRecord, unFQDNzone)
 
-	endpoint := fmt.Sprintf("/v4/domains/%s/records/%s", unFQDNzone, record.ID)
+	if err = p.getClient(ctx); err != nil {
+		return libdns.Record{}, err
+	}
 
-	upsertedRecord.fromLibDNSRecord(record, unFQDNzone)
-
-	if err = json.NewEncoder(post).Encode(upsertedRecord); err != nil {
-		return record, fmt.Errorf("record -> %s, zone -> %s, err -> %w", record, zone, err)
+	if err = json.NewEncoder(post).Encode(shouldUpsert); err != nil {
+		return libdns.Record{}, fmt.Errorf("could not encode the form data for the request:  %w", err)
 	}
 
 	if body, err = p.client.doRequest(ctx, method, endpoint, post); err != nil {
-		return record, fmt.Errorf("record -> %s, zone -> %s, err -> %w", record, zone, err)
+		if strings.Contains(err.Error(), "Duplicate Record") {
+			err = fmt.Errorf("name.com will not allow an update to a record that has identical values to an existing record: %w", err)
+		}
+
+		return libdns.Record{}, fmt.Errorf("request to update the record was not successful:  %w", err)
 	}
 
-
-	if err = json.NewDecoder(body).Decode(&upsertedRecord); err != nil {
-		return record, fmt.Errorf("record -> %s, zone -> %s, err -> %w", record, zone, err)
+	if err = json.NewDecoder(body).Decode(&shouldUpsert); err != nil {
+		return libdns.Record{}, fmt.Errorf("could not decode name.com's response:  %w", err)
 	}
 
-	return upsertedRecord.toLibDNSRecord(), nil
+	return shouldUpsert.toLibDNSRecord(), nil
 }

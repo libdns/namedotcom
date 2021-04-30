@@ -1,17 +1,24 @@
+// Implements the libdns interfaces for name.com
+// https://www.name.com/api-docs
 package namedotcom
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/libdns/libdns"
-	"github.com/pkg/errors"
 	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/libdns/libdns"
+	"github.com/pkg/errors"
 )
+
+// default timeout for the http request handler (seconds)
+const HTTP_TIMEOUT = 20
 
 type (
 	nameDotCom struct {
@@ -23,9 +30,9 @@ type (
 
 	// listRecordsResponse contains the response for the ListRecords function.
 	listRecordsResponse struct {
-		Records  []*nameDotComRecord `json:"records,omitempty"`
-		NextPage int32               `json:"nextPage,omitempty"`
-		LastPage int32               `json:"lastPage,omitempty"`
+		Records  []nameDotComRecord `json:"records,omitempty"`
+		NextPage int32              `json:"nextPage,omitempty"`
+		LastPage int32              `json:"lastPage,omitempty"`
 	}
 
 	// nameDotComRecord is an individual DNS resource record for name.com.
@@ -51,12 +58,11 @@ type (
 	}
 )
 
-// Error errorResponse should implement the error interface
 func (er errorResponse) Error() string {
 	return er.Message + ": " + er.Details
 }
 
-// errorResponse  used to handle response errors
+// errorResponse - provides a more verbose stderr
 func (n *nameDotCom) errorResponse(resp *http.Response) error {
 	er := &errorResponse{}
 	err := json.NewDecoder(resp.Body).Decode(er)
@@ -67,9 +73,10 @@ func (n *nameDotCom) errorResponse(resp *http.Response) error {
 	return errors.WithStack(er)
 }
 
+// doRequest is the base http request handler including a request context.
 func (n *nameDotCom) doRequest(ctx context.Context, method, endpoint string, post io.Reader) (io.Reader, error) {
 	uri := n.Server + endpoint
-	req, err := http.NewRequestWithContext(ctx, method, uri, post)
+	req, err := http.NewRequestWithContext(ctx, method, uri, post) // the offical name.com go client does not implement ctx
 	if err != nil {
 		return nil, err
 	}
@@ -95,16 +102,15 @@ func (n *nameDotComRecord) fromLibDNSRecord(record libdns.Record, zone string) {
 	}
 	n.ID = int32(id)
 	n.Type = record.Type
-	n.Host = strings.TrimSuffix(strings.Replace(record.Name, zone, "", -1), ".")
+	n.Host = n.toSanitized(record, zone)
 	n.Answer = record.Value
 	n.TTL = uint32(record.TTL.Seconds())
 }
 
 // toLibDNSRecord maps a name.com record to a libdns record
 func (n *nameDotComRecord) toLibDNSRecord() libdns.Record {
-	id := fmt.Sprint(n.ID)
 	return libdns.Record{
-		ID:    id,
+		ID:    fmt.Sprint(n.ID),
 		Type:  n.Type,
 		Name:  n.Host,
 		Value: n.Answer,
@@ -112,7 +118,24 @@ func (n *nameDotComRecord) toLibDNSRecord() libdns.Record {
 	}
 }
 
+// name.com's api server expects the sub domain name to be relavtive and have no trailing period
+// , e.g. "sub.zone." -> "sub"
+func (n *nameDotComRecord) toSanitized(libdnsRecord libdns.Record, zone string) string {
+	return strings.TrimSuffix(strings.Replace(libdnsRecord.Name, zone, "", -1), ".")
+}
+
 // NewNameDotComClient returns a new name.com client struct
-func NewNameDotComClient(token, user, apiUrl string) *nameDotCom {
-	return &nameDotCom{apiUrl, user, token, &http.Client{Timeout: 10 * time.Second}}
+func NewNameDotComClient(ctx context.Context, token, user, server string) (*nameDotCom, error) {
+	re := regexp.MustCompile(`^https://.+\.com$`)
+	validURL := re.MatchString(server)
+	if !validURL {
+		return nil, errors.New("invalid url scheme, expecting https:// prefix")
+	}
+
+	httpClient := &http.Client{Timeout: HTTP_TIMEOUT * time.Second}
+
+	return &nameDotCom{
+		server, user, token,
+		httpClient,
+	}, nil
 }
