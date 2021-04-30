@@ -8,9 +8,9 @@ This package implements the [libdns interfaces](https://github.com/libdns/libdns
 ## Authenticating
 To initiate the provider you need to supply the following parameters:
 ```go
-provider := namedotcom.Provider{
+provider := namedotcom.Provider {
 	Token : "NAMEDOTCOM_API_TOKEN",
-	User :     "NAMEDOTCOM_USER_NAME",
+	User :  "NAMEDOTCOM_USER_NAME",
 	Server: "https://api.name.com", // full url scheme expected here..
 }
 ```
