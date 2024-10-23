@@ -28,6 +28,12 @@ type (
 		client *http.Client
 	}
 
+	listDomainsResponse struct {
+		Domains  []nameDotComDomain `json:"domains,omitempty"`
+		NextPage int32              `json:"nextPage,omitempty"`
+		LastPage int32              `json:"lastPage,omitempty"`
+	}
+
 	// listRecordsResponse contains the response for the ListRecords function.
 	listRecordsResponse struct {
 		Records  []nameDotComRecord `json:"records,omitempty"`
@@ -45,6 +51,10 @@ type (
 		Answer     string `json:"answer,omitempty"`
 		TTL        uint32 `json:"ttl,omitempty"`
 		Priority   uint32 `json:"priority,omitempty"`
+	}
+
+	nameDotComDomain struct {
+		DomainName string `json:"domainName,omitempty"`
 	}
 )
 
