@@ -28,6 +28,49 @@ func (p *Provider) getClient(ctx context.Context) error {
 	return nil
 }
 
+// listZones returns all the zones (domains) for the user
+func (p *Provider) listZones(ctx context.Context) ([]libdns.Zone, error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	var (
+		zones   []libdns.Zone
+		method  = "GET"
+		body    io.Reader
+		resp    = &listDomainsResponse{}
+		reqPage = 1
+		err     error
+	)
+
+	if err = p.getClient(ctx); err != nil {
+		return []libdns.Zone{}, err
+	}
+
+	for reqPage > 0 {
+		if reqPage != 0 {
+			endpoint := fmt.Sprintf("/v4/domains?page=%d", reqPage)
+
+			if body, err = p.client.doRequest(ctx, method, endpoint, nil); err != nil {
+				return []libdns.Zone{}, fmt.Errorf("request failed:  %w", err)
+			}
+
+			if err = json.NewDecoder(body).Decode(resp); err != nil {
+				return []libdns.Zone{}, fmt.Errorf("could not decode name.com's response:  %w", err)
+			}
+
+			for _, domain := range resp.Domains {
+				zones = append(zones, libdns.Zone{
+					Name: domain.DomainName,
+				})
+			}
+
+			reqPage = int(resp.NextPage)
+		}
+	}
+
+	return zones, nil
+}
+
 // listAllRecords returns all records for the given zone .. GET /v4/domains/{ domainName }/records
 func (p *Provider) listAllRecords(ctx context.Context, zone string) ([]libdns.Record, error) {
 	p.mutex.Lock()
@@ -76,7 +119,7 @@ func (p *Provider) listAllRecords(ctx context.Context, zone string) ([]libdns.Re
 	return records, nil
 }
 
-//  deleteRecord  DELETE /v4/domains/{ domainName }/records/{ record.ID }
+// deleteRecord  DELETE /v4/domains/{ domainName }/records/{ record.ID }
 func (p *Provider) deleteRecord(ctx context.Context, zone string, record libdns.Record) (libdns.Record, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
