@@ -5,6 +5,7 @@ package namedotcom
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,7 +15,6 @@ import (
 	"time"
 
 	"github.com/libdns/libdns"
-	"github.com/pkg/errors"
 )
 
 // default timeout for the http request handler (seconds)
@@ -77,10 +77,10 @@ func (n *nameDotCom) errorResponse(resp *http.Response) error {
 	er := &errorResponse{}
 	err := json.NewDecoder(resp.Body).Decode(er)
 	if err != nil {
-		return errors.Wrap(err, "api returned unexpected response")
+		return fmt.Errorf("api returned unexpected response: %w", err)
 	}
 
-	return errors.WithStack(er)
+	return er
 }
 
 // doRequest is the base http request handler including a request context.
