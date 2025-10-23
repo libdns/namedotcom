@@ -1,8 +1,7 @@
 module github.com/libdns/namedotcom
 
-go 1.16
+go 1.25
 
 require (
-	github.com/libdns/libdns v0.2.2
-	github.com/pkg/errors v0.9.1
+	github.com/libdns/libdns v1.1.1
 )

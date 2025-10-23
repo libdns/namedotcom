@@ -2,6 +2,7 @@ package namedotcom
 
 import (
 	"context"
+	"net/netip"
 	"os"
 	"strings"
 	"testing"
@@ -29,32 +30,28 @@ func init() {
 	}
 
 	newRecordSet = []libdns.Record{
-		{
-			Type:  "txt",
-			Name:  "__test_txt_record.example.com",
-			Value: "old_value",
-			TTL:   time.Duration(300),
-		}, {
-
-			Type:  "A",
-			Name:  "test2",
-			Value: "10.10.0.2",
-			TTL:   time.Duration(300),
+		libdns.TXT{
+			Name: "__test_txt_record.example.com",
+			TTL:  time.Duration(300),
+			Text: "old_value",
+		},
+		libdns.Address{
+			Name: "test2",
+			TTL:  time.Duration(300),
+			IP:   netip.MustParseAddr("10.10.0.2"),
 		},
 	}
 
 	updateSet = []libdns.Record{
-		{
-			Type:  "txt",
-			Name:  "__test_txt_record.example.com",
-			Value: "new_value",
-			TTL:   time.Duration(300),
-		}, {
-
-			Type:  "A",
-			Name:  "test2",
-			Value: "10.10.0.2",
-			TTL:   time.Duration(300),
+		libdns.TXT{
+			Name: "__test_txt_record.example.com",
+			TTL:  time.Duration(300),
+			Text: "new_value",
+		},
+		libdns.Address{
+			Name: "test2",
+			TTL:  time.Duration(300),
+			IP:   netip.MustParseAddr("10.10.0.2"),
 		},
 	}
 }
@@ -128,11 +125,11 @@ func TestProvider_SetRecords(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testName := strings.ToLower(updateSet[0].Name)
+			testName := strings.ToLower(updateSet[0].RR().Name)
 			t.Log(rollingRecords)
 
 			for _, rec := range rollingRecords {
-				if testName == rec.Name {
+				if testName == rec.RR().Name {
 					updateSet[0].ID = rec.ID
 				}
 			}
@@ -169,10 +166,10 @@ func TestProvider_DeleteRecords(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testName := strings.ToLower(updateSet[0].Name)
+			testName := strings.ToLower(updateSet[0].RR().Name)
 
 			for _, rec := range rollingRecords {
-				if testName == rec.Name {
+				if testName == rec.RR().Name {
 					updateSet[0].ID = rec.ID
 				}
 			}

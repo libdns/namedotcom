@@ -4,6 +4,7 @@ package namedotcom
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/libdns/libdns"
 )
@@ -24,7 +25,17 @@ func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record
 		return nil, err
 	}
 
-	return records, nil
+	var result []libdns.Record
+
+	for _, record := range records {
+		rec, err := record.toLibDNSRecord(zone)
+		if err != nil {
+			return []libdns.Record{}, fmt.Errorf("could not decode name.com's response:  %w", err)
+		}
+		result = append(result, rec)
+	}
+
+	return result, nil
 }
 
 // AppendRecords adds records to the zone. It returns the records that were added.
@@ -74,7 +85,6 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 }
 
 func (p *Provider) ListZones(ctx context.Context) ([]libdns.Zone, error) {
-
 	zones, err := p.listZones(ctx)
 	if err != nil {
 		return nil, err
