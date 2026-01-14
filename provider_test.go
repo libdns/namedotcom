@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/netip"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -63,22 +62,23 @@ func TestProvider_GetRecords(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "get_records_1_pass",
-			want:    recordsAlreadyExistForDomain,
-			wantErr: !recordsAlreadyExistForDomain,
+			name:    "get_record_1_pass",
+			want:    true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := p.GetRecords(ctx, zone)
-
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("GetRecords() error = %v, wantErr %v", err, tt.wantErr)
-			} else if len(got) == 0 && tt.want == true {
+			} else if len(got) > 0 != tt.want {
 				t.Fatalf("GetRecords() error = %v, want %v", err, tt.want)
 			} else {
-				t.Log(got, err)
-				rollingRecords = got
+				t.Log(got)
+				if recordsAlreadyExistForDomain {
+					rollingRecords = got
+				}
 			}
 		})
 	}
@@ -92,7 +92,12 @@ func TestProvider_AppendRecords(t *testing.T) {
 	}{
 		{
 			name:    "append_record_1_pass",
-			want:    len(rollingRecords) > 0,
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:    "append_record_2_pass",
+			want:    true,
 			wantErr: false,
 		},
 	}
@@ -101,8 +106,8 @@ func TestProvider_AppendRecords(t *testing.T) {
 			got, err := p.AppendRecords(ctx, zone, newRecordSet)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("AppendRecords() error = %v, wantErr %v", err, tt.wantErr)
-			} else if len(got) < 1 && tt.want {
-				t.Fatalf("AppendRecords() error = %v, wantErr %v", err, tt.wantErr)
+			} else if len(got) > 0 != tt.want {
+				t.Fatalf("AppendRecords() error = %v, want %v", err, tt.want)
 			} else {
 				t.Log(got)
 				rollingRecords = got
@@ -118,35 +123,25 @@ func TestProvider_SetRecords(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "set_record_1_pass",
-			want:    recordsAlreadyExistForDomain,
+			name:    "update_record_1_pass",
+			want:    true,
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testName := strings.ToLower(updateSet[0].RR().Name)
 			t.Log(rollingRecords)
 
-			for _, rec := range rollingRecords {
-				if testName == rec.RR().Name {
-					updateSet[0].ID = rec.ID
-				}
-			}
-
-			if updateSet[0].ID != "" {
-				got, err := p.SetRecords(ctx, zone, updateSet)
-				if (err != nil) != tt.wantErr {
-					t.Fatalf("SetRecords() error = %v, wantErr %v", err, tt.wantErr)
-				} else if len(got) > 0 && !tt.want {
-					t.Fatalf("SetRecords() error = %v, want %v", err, tt.want)
-				} else {
-					t.Log(got)
-					rollingRecords = got
-				}
+			// With libdns v1.x, SetRecords will automatically look up the record ID
+			// by matching name/type/data, so we don't need to manually set it
+			got, err := p.SetRecords(ctx, zone, updateSet)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("SetRecords() error = %v, wantErr %v", err, tt.wantErr)
+			} else if len(got) > 0 && !tt.want {
+				t.Fatalf("SetRecords() error = %v, want %v", err, tt.want)
 			} else {
-				t.Log("skipping, record id is not set.")
-				t.Skip()
+				t.Log(got)
+				rollingRecords = got
 			}
 		})
 	}
@@ -166,24 +161,13 @@ func TestProvider_DeleteRecords(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testName := strings.ToLower(updateSet[0].RR().Name)
-
-			for _, rec := range rollingRecords {
-				if testName == rec.RR().Name {
-					updateSet[0].ID = rec.ID
-				}
-			}
-
-			if updateSet[0].ID != "" {
-				got, err := p.DeleteRecords(ctx, zone, updateSet)
-				if (err != nil) != tt.wantErr {
-					t.Fatalf("DeleteRecords() error = %v, wantErr %v", err, tt.wantErr)
-				} else {
-					t.Log(got, err)
-				}
+			// With libdns v1.x, DeleteRecords will automatically look up the record ID
+			// by matching name/type/data, so we don't need to manually set it
+			got, err := p.DeleteRecords(ctx, zone, updateSet)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("DeleteRecords() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
-				t.Log("skipping, record id is not set.")
-				t.Skip()
+				t.Log(got, err)
 			}
 		})
 	}
