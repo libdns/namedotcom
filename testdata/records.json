@@ -1,0 +1,124 @@
+{
+  "totalCount": 13,
+  "from": 1,
+  "to": 13,
+  "records": [
+    {
+      "answer": "example.com",
+      "domainName": "example.com",
+      "fqdn": "www.example.com.",
+      "host": "www",
+      "id": 100001,
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    {
+      "answer": "192.0.2.3",
+      "domainName": "example.com",
+      "fqdn": "example.com.",
+      "host": "",
+      "id": 100002,
+      "ttl": 300,
+      "type": "A"
+    },
+    {
+      "answer": "tls.example.net",
+      "domainName": "example.com",
+      "fqdn": "git.example.com.",
+      "host": "git",
+      "id": 100003,
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    {
+      "answer": "keys.example.net",
+      "domainName": "example.com",
+      "fqdn": "keys.example.com.",
+      "host": "keys",
+      "id": 100004,
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    {
+      "answer": "audio.example.net",
+      "domainName": "example.com",
+      "fqdn": "audiobookshelf.example.com.",
+      "host": "audiobookshelf",
+      "id": 100005,
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    {
+      "answer": "kb.example.net",
+      "domainName": "example.com",
+      "fqdn": "kb.example.com.",
+      "host": "kb",
+      "id": 100006,
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    {
+      "answer": "m.example.net",
+      "domainName": "example.com",
+      "fqdn": "share.example.com.",
+      "host": "share",
+      "id": 100007,
+      "ttl": 300,
+      "type": "ANAME"
+    },
+    {
+      "answer": "192.0.2.8",
+      "domainName": "example.com",
+      "fqdn": "vms.example.com.",
+      "host": "vms",
+      "id": 100008,
+      "ttl": 300,
+      "type": "A"
+    },
+    {
+      "answer": "192.0.2.8",
+      "domainName": "example.com",
+      "fqdn": "*.vms.example.com.",
+      "host": "*.vms",
+      "id": 100009,
+      "ttl": 300,
+      "type": "A"
+    },
+    {
+      "answer": "v=spf1 -all",
+      "domainName": "example.com",
+      "fqdn": "example.com.",
+      "host": "",
+      "id": 100010,
+      "ttl": 3600,
+      "type": "TXT"
+    },
+    {
+      "answer": "v=DMARC1; p=reject;",
+      "domainName": "example.com",
+      "fqdn": "_dmarc.example.com.",
+      "host": "_dmarc",
+      "id": 100011,
+      "ttl": 3600,
+      "type": "TXT"
+    },
+    {
+      "answer": "dev.example.net",
+      "domainName": "example.com",
+      "fqdn": "dev-206.example.com.",
+      "host": "dev-206",
+      "id": 100012,
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    {
+      "answer": "dev2.example.net",
+      "domainName": "example.com",
+      "fqdn": "tron-dev.example.com.",
+      "host": "tron-dev",
+      "id": 100013,
+      "ttl": 300,
+      "type": "CNAME"
+    }
+  ]
+}

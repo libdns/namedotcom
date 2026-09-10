@@ -1,0 +1,13 @@
+{
+  "domains": [
+    {
+      "domainName": "example.net"
+    },
+    {
+      "domainName": "example.com"
+    }
+  ],
+  "from": 1,
+  "to": 2,
+  "totalCount": 2
+}
