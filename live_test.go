@@ -73,6 +73,11 @@ func liveServer() string {
 
 func TestMain(m *testing.M) {
 	if isLiveMode() {
+		if os.Getenv("NAMEDOTCOM_TEST_ZONE") == "" {
+			fmt.Fprintln(os.Stderr, "ERROR: NAMEDOTCOM_LIVE=true requires NAMEDOTCOM_TEST_ZONE to be set explicitly.")
+			fmt.Fprintln(os.Stderr, "       This safety check prevents accidentally mutating an unknown zone.")
+			os.Exit(1)
+		}
 		setupLiveBackup()
 	}
 
@@ -85,30 +90,19 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// setupLiveBackup reads the test zone and writes a timestamped TSV snapshot.
+// setupLiveBackup reads the test zone (from NAMEDOTCOM_TEST_ZONE, which
+// TestMain has already verified is set) and writes a timestamped TSV snapshot.
 // On any failure it logs a warning and leaves the backup state empty (tests
 // still run, but without the integrity check).
 func setupLiveBackup() {
 	user := os.Getenv("NAMEDOTCOM_USERNAME")
 	token := os.Getenv("NAMEDOTCOM_TOKEN")
+	zone := os.Getenv("NAMEDOTCOM_TEST_ZONE")
 
 	p := &Provider{
 		Token:  token,
 		User:   user,
 		Server: liveServer(),
-	}
-
-	// Determine the test zone — same logic as liveTestZone.
-	zone := os.Getenv("NAMEDOTCOM_TEST_ZONE")
-	if zone == "" {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		zones, err := p.ListZones(ctx)
-		cancel()
-		if err != nil || len(zones) == 0 {
-			fmt.Fprintf(os.Stderr, "WARNING: could not list zones for backup: %v\n", err)
-			return
-		}
-		zone = zones[0].Name
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -273,27 +267,20 @@ func printRecordDiff(backup, current []libdns.Record) {
 // Shared test helpers (used by tests in provider_test.go and apex_test.go)
 // -----------------------------------------------------------------------
 
-// liveTestZone returns the zone to use for live tests. If TestMain already
-// created a backup, that zone is used (ensuring consistency). Otherwise it
-// falls back to NAMEDOTCOM_TEST_ZONE or the first zone from ListZones.
+// liveTestZone returns the zone to use for live tests. TestMain has already
+// verified that NAMEDOTCOM_TEST_ZONE is set, so this always returns a valid
+// zone.
 func liveTestZone(t *testing.T, p *Provider) string {
 	t.Helper()
 	if liveBackupZone != "" {
 		return liveBackupZone
 	}
+	// TestMain should have caught this, but guard anyway.
 	if z := os.Getenv("NAMEDOTCOM_TEST_ZONE"); z != "" {
 		return z
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	zones, err := p.ListZones(ctx)
-	if err != nil {
-		t.Skipf("ListZones error: %v", err)
-	}
-	if len(zones) == 0 {
-		t.Skip("no zones available")
-	}
-	return zones[0].Name
+	t.Fatal("NAMEDOTCOM_TEST_ZONE is required in live mode")
+	return ""
 }
 
 // cleanupTestRecords deletes every record in the zone whose name starts with

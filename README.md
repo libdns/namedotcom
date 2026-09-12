@@ -115,10 +115,10 @@ go test -v -count=1
 
 Optional overrides:
 
-| Env var | Default | Purpose |
-|---|---|---|
-| `NAMEDOTCOM_BASE_URL` | `https://api.name.com` | API base URL (point at a mock or staging server) |
-| `NAMEDOTCOM_TEST_ZONE` | first zone from `ListZones` | Zone to test against |
+| Env var | Required in live mode | Default | Purpose |
+|---|---|---|---|
+| `NAMEDOTCOM_BASE_URL` | no | `https://api.name.com` | API base URL (point at a mock or staging server) |
+| `NAMEDOTCOM_TEST_ZONE` | **yes** | — | Zone to test against. Must be set explicitly — the tests will not guess. |
 
 ### Backup & integrity check
 
