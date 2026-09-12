@@ -16,7 +16,7 @@ To initiate the provider you need to supply the following parameters:
 provider := namedotcom.Provider{
 	Token:  "NAMEDOTCOM_API_TOKEN",
 	User:   "NAMEDOTCOM_USER_NAME",
-	Server: "https://api.name.com", // full url scheme expected here..
+	Server: "https://api.name.com", // or https://api.dev.name.com
 }
 ```
 
@@ -90,10 +90,54 @@ func main() {
 
 ## Testing
 
-The test suite runs entirely in-process against a mock of the name.com CORE
-API (see `mock_test.go`) seeded with sanitized record fixtures (`testdata/`),
-so no credentials or network access are required:
+The **same test suite** runs against either an in-process mock (default) or
+the real name.com API. The distinguishing factor is the `NAMEDOTCOM_LIVE`
+safety flag.
+
+### Mock mode (default)
+
+No credentials or network access required. An in-process mock server seeded
+with sanitized fixtures (`testdata/`) is started for each test:
 
 ```sh
-go test ./...
+go test -v -count=1
 ```
+
+### Live mode
+
+Set `NAMEDOTCOM_LIVE=true` to opt in, plus credentials:
+
+```sh
+source ~/.config/namedotcom/<profile>.env
+export NAMEDOTCOM_LIVE=true
+go test -v -count=1
+```
+
+Optional overrides:
+
+| Env var | Default | Purpose |
+|---|---|---|
+| `NAMEDOTCOM_BASE_URL` | `https://api.name.com` | API base URL (point at a mock or staging server) |
+| `NAMEDOTCOM_TEST_ZONE` | first zone from `ListZones` | Zone to test against |
+
+### Backup & integrity check
+
+In live mode, `TestMain` snapshots the test zone to a timestamped TSV file
+under `zone-backups/` before any test runs. After all tests complete, the
+zone is re-read and compared against the snapshot. If any test left the zone
+in a different state the run fails with a diff. The TSV files are never
+deleted — they serve as an audit trail.
+
+### Test organisation
+
+All write tests use names prefixed with `_libdnstest-` so they cannot collide
+with real records and are cleaned up via `t.Cleanup`.
+
+- **Subdomain tests** (`TestAppendRecords`, `TestSetRecords`,
+  `TestDeleteRecords`, `TestConcurrentAppend`, …) — operate on subdomain
+  records only.
+- **Apex tests** (`TestApex_*`) — operate on apex (`@`) records. These save
+  and restore the original apex state. Test IPs use the `192.0.2.0/24`
+  documentation range (RFC 5737) so they never route real traffic.
+- **Mock-specific assertions** — `TestGetRecords` and `TestListZones` include
+  extra checks against the fixture data that only run in mock mode.

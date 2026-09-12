@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/netip"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -238,10 +237,8 @@ func sanitizeHost(name, zone string) string {
 
 // NewNameDotComClient returns a new name.com client struct
 func NewNameDotComClient(ctx context.Context, token, user, server string) (*nameDotCom, error) {
-	re := regexp.MustCompile(`^https://.+\.com$`)
-	validURL := re.MatchString(server)
-	if !validURL {
-		return nil, fmt.Errorf("invalid url scheme, expecting https:// prefix")
+	if !strings.HasPrefix(server, "https://") && !strings.HasPrefix(server, "http://") {
+		return nil, fmt.Errorf("invalid url %q, expecting http:// or https:// prefix", server)
 	}
 
 	httpClient := &http.Client{Timeout: HTTP_TIMEOUT * time.Second}
