@@ -53,7 +53,7 @@ type (
 		Type       string `json:"type,omitempty"`
 		Answer     string `json:"answer,omitempty"`
 		TTL        uint32 `json:"ttl,omitempty"`
-		Priority   int32  `json:"priority,omitempty"`
+		Priority   *int32 `json:"priority,omitempty"` // nil for types without one; 0 is a valid priority
 	}
 
 	nameDotComDomain struct {
@@ -129,7 +129,8 @@ func (n *nameDotComRecord) fromLibDNSRecord(id int32, record libdns.Record, zone
 		if len(fields) > 1 {
 			priority, err := strconv.Atoi(fields[0])
 			if err == nil {
-				n.Priority = int32(priority)
+				p := int32(priority)
+				n.Priority = &p
 			}
 			n.Answer = strings.Join(fields[1:], " ")
 		} else {
@@ -168,7 +169,7 @@ func (r *nameDotComRecord) toLibDNSRecord(zone string) (libdns.Record, error) {
 		return libdns.MX{
 			Name:       name,
 			TTL:        ttl,
-			Preference: uint16(r.Priority),
+			Preference: uint16(r.priority()),
 			Target:     r.Answer,
 		}, nil
 	case "NS":
@@ -206,7 +207,7 @@ func (r *nameDotComRecord) toLibDNSRecord(zone string) (libdns.Record, error) {
 			Transport: strings.TrimPrefix(parts[1], "_"),
 			Name:      srvName,
 			TTL:       ttl,
-			Priority:  uint16(r.Priority),
+			Priority:  uint16(r.priority()),
 			Weight:    uint16(weight),
 			Port:      uint16(port),
 			Target:    contentParts[2],
@@ -233,6 +234,14 @@ func (r *nameDotComRecord) toLibDNSRecord(zone string) (libdns.Record, error) {
 // name.com's api: relative to the zone with no trailing period. e.g. "sub.zone." -> "sub"
 func sanitizeHost(name, zone string) string {
 	return strings.TrimSuffix(strings.Replace(name, zone, "", -1), ".")
+}
+
+// priority returns the record's priority, or 0 if it has none.
+func (r nameDotComRecord) priority() int32 {
+	if r.Priority == nil {
+		return 0
+	}
+	return *r.Priority
 }
 
 // NewNameDotComClient returns a new name.com client struct
